@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/employees")
@@ -19,7 +20,7 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
-    @GetMapping("")
+    @GetMapping("/show")
     public List<Employee> getAllEmployees() {
         return employeeRepository.findAll();
     }
@@ -31,15 +32,12 @@ public class EmployeeController {
 
     @PutMapping("/upd/{id}")
     public ResponseEntity<Employee> updateEmployee(@PathVariable Long id, @RequestBody Employee updatedEmployee) {
-        // Check if the employee with the given id exists in the database
         if (!employeeRepository.existsById(id)) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        // Set the id of the updated employee object
         updatedEmployee.setId(id);
 
-        // Save the updated employee
         Employee savedEmployee = employeeService.saveEmployee(updatedEmployee);
 
         return new ResponseEntity<>(savedEmployee, HttpStatus.OK);
@@ -47,15 +45,28 @@ public class EmployeeController {
 
     @DeleteMapping("/del/{id}")
     public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
-        // Check if the employee with the given id exists in the database
         if (!employeeRepository.existsById(id)) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        // Delete the employee
         employeeService.deleteEmployeeById(id);
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PatchMapping("/upd/few/{id}")
+    public ResponseEntity<Employee> patchEmployee(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        Employee existingEmployee = employeeRepository.findById(id).orElse(null);
+
+        if (existingEmployee == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        existingEmployee.applyPatch(updates);
+
+        Employee updatedEmployee = employeeService.saveEmployee(existingEmployee);
+
+        return new ResponseEntity<>(updatedEmployee, HttpStatus.OK);
     }
 }
 
